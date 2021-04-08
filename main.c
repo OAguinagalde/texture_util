@@ -192,12 +192,26 @@ void tu_printTextureData(unsigned char* data, int width, int height, int channel
     }
 }
 
-void tu_embeddTexture(unsigned char* data, int width, int height, int channels) {
+void tu_embeddTexture(unsigned char* data, int width, int height, int channels, char channel_to_print, int verbose) {
+    int channels_I_care_about = 0;
+    if ((channels >= 1) && channel_to_print & tu_channel_red) {
+        channels_I_care_about++;
+    }
+    if ((channels >= 2) && channel_to_print & tu_channel_green) {
+        channels_I_care_about++;
+    }
+    if ((channels >= 3) && channel_to_print & tu_channel_blue) {
+        channels_I_care_about++;
+    }
+    if ((channels >= 4) && channel_to_print & tu_channel_alpha) {
+        channels_I_care_about++;
+    }
     static char hexval[3];
-    char* output = tu_malloc((sizeof(char) * height*width*channels*5)+1);
-    memset(output,0,(sizeof(char) * height*width*channels*5)+1);
+    char* output = tu_malloc((sizeof(char) * height*width*channels_I_care_about*5)+1);
+    memset(output,0,(sizeof(char) * height*width*channels_I_care_about*5)+1);
     for(int i = 0; i < width*height; i++) {
         int pixel_index = i;
+        int channels_written_so_far = 0;
         unsigned char r, g, b, a;
         // if (pixel_index % width == 0 && pixel_index != 0) { // First pixel of new "line"
         //     tu_log("\n");
@@ -207,37 +221,45 @@ void tu_embeddTexture(unsigned char* data, int width, int height, int channels) 
         if (channels >= 3) { b = data[(pixel_index*channels) + 2]; }
         if (channels >= 4) { a = data[(pixel_index*channels) + 3]; }
 
-        if (channels >= 1) {
-            output[(pixel_index*channels*5)+0] = '0';
-            output[(pixel_index*channels*5)+1] = 'x';
+        if ((channels >= 1) && channel_to_print & tu_channel_red) {
+            output[(pixel_index*channels_I_care_about*5)+0+(5*channels_written_so_far)] = '0';
+            output[(pixel_index*channels_I_care_about*5)+1+(5*channels_written_so_far)] = 'x';
             sprintf(hexval, "%02x", r);
-            strcpy(&output[(pixel_index*channels*5)+2],&hexval);
-            output[(pixel_index*channels*5)+4] = ',';
+            strcpy(&output[(pixel_index*channels_I_care_about*5)+2+(5*channels_written_so_far)],&hexval);
+            output[(pixel_index*channels_I_care_about*5)+4+(5*channels_written_so_far)] = ',';
+            channels_written_so_far++;
         }
-        if (channels >= 2) {
-            output[(pixel_index*channels*5)+0+5] = '0';
-            output[(pixel_index*channels*5)+1+5] = 'x';
+        if ((channels >= 2) && channel_to_print & tu_channel_green) {
+            output[(pixel_index*channels_I_care_about*5)+0+(5*channels_written_so_far)] = '0';
+            output[(pixel_index*channels_I_care_about*5)+1+(5*channels_written_so_far)] = 'x';
             sprintf(hexval, "%02x", g);
-            strcpy(&output[(pixel_index*channels*5)+2+5],&hexval);
-            output[(pixel_index*channels*5)+4+5] = ',';
+            strcpy(&output[(pixel_index*channels_I_care_about*5)+2+(5*channels_written_so_far)],&hexval);
+            output[(pixel_index*channels_I_care_about*5)+4+(5*channels_written_so_far)] = ',';
+            channels_written_so_far++;
         }
-        if (channels >= 3) {
-            output[(pixel_index*channels*5)+0+10] = '0';
-            output[(pixel_index*channels*5)+1+10] = 'x';
+        if ((channels >= 3) && channel_to_print & tu_channel_blue) {
+            output[(pixel_index*channels_I_care_about*5)+0+(5*channels_written_so_far)] = '0';
+            output[(pixel_index*channels_I_care_about*5)+1+(5*channels_written_so_far)] = 'x';
             sprintf(hexval, "%02x", b);
-            strcpy(&output[(pixel_index*channels*5)+2+10],&hexval);
-            output[(pixel_index*channels*5)+4+10] = ',';
+            strcpy(&output[(pixel_index*channels_I_care_about*5)+2+(5*channels_written_so_far)],&hexval);
+            output[(pixel_index*channels_I_care_about*5)+4+(5*channels_written_so_far)] = ',';
+            channels_written_so_far++;
         }
-        if (channels >= 4) {
-            output[(pixel_index*channels*5)+0+15] = '0';
-            output[(pixel_index*channels*5)+1+15] = 'x';
+        if ((channels >= 4) && channel_to_print & tu_channel_alpha) {
+            output[(pixel_index*channels_I_care_about*5)+0+(5*channels_written_so_far)] = '0';
+            output[(pixel_index*channels_I_care_about*5)+1+(5*channels_written_so_far)] = 'x';
             sprintf(hexval, "%02x", a);
-            strcpy(&output[(pixel_index*channels*5)+2+15],&hexval);
-            output[(pixel_index*channels*5)+4+15] = ',';
+            strcpy(&output[(pixel_index*channels_I_care_about*5)+2+(5*channels_written_so_far)],&hexval);
+            output[(pixel_index*channels_I_care_about*5)+4+(5*channels_written_so_far)] = ',';
+            channels_written_so_far++;
         }
     }
-    output[height*width*channels*5] = '\0';
-    tu_log("Data:\n%s\nBytes: %d", output, height*width*channels);
+    output[height*width*channels_I_care_about*5] = '\0';
+    if (verbose) {
+        tu_log("Data:\n%s\nBytes: %d", output, height*width*channels_I_care_about);
+    } else {
+        tu_log("%s", output);
+    }
     tu_free(output);
     // unsigned char protocols_txt[] = {
     // 0x23, 0x20, 0x2f, 0x65, 0x74, 0x63, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f,
@@ -250,17 +272,130 @@ void tu_embeddTexture(unsigned char* data, int width, int height, int channels) 
     // unsigned int protocols_txt_len = 6568;
 }
 
+typedef enum {
+    tu_action_asHex,
+    tu_action_printChannel,
+    tu_action_mergeHorizontal
+} tu_action;
+
 int main(int argc, char** argv) {
-    tu_log("Texture name \"%s\"\n", argv[1]);
-    tu_texture texture = (tu_texture) {0};
-    tu_result result = tu_loadTextureFile(argv[1], &texture);
-    if (result == tu_success) {
-        tu_log("\t.Width = %d\n\t.Height = %d\n\t.Channels = %d\n", texture.width, texture.height, texture.channels);
-        // tu_printTextureData(texture.data, texture.width, texture.height, texture.channels, tu_channel_red | tu_channel_green | tu_channel_blue | tu_channel_alpha);
-        tu_embeddTexture(texture.data, texture.width, texture.height, texture.channels);
-        tu_unloadTexture(texture);
-    } else {
-        tu_log("Something failed\n");
+    // Default actions
+    tu_action action_singleTexture = tu_action_asHex;
+    tu_action action_doubleTexture = tu_action_mergeHorizontal;
+    // Texture names
+    char* texture1 = NULL;
+    char* texture2 = NULL;
+    // channels
+    char channels = tu_channel_red | tu_channel_green | tu_channel_blue | tu_channel_alpha;
+    int channels_is_modified = 0;
+    // silent
+    int silent_output = 0;
+
+    // Figure out the input
+    int input_pathcount = 0;
+    char* tool = argv[0];
+    // tu_log("argc: %d\n", argc);
+    for(int i = 1; i < argc; i++) {
+        char* argument = argv[i];
+        // tu_log("argument %d: %s\n", i, argument);
+
+        if (argument[0] == '-') {
+            // It's an option
+            int option_len = strlen(argument);
+            if (option_len > 1) {
+                // tu_log("option: %s\n", &argument[1]);
+                for (int option_index = 0; option_index < option_len-1; option_index++) {
+                    char option = argument[1+option_index];
+                    // tu_log("option: %c", option);
+                    switch (option) {
+                        case 'h': {
+                            action_singleTexture = tu_action_asHex;
+                        } break;
+                        case 'p': {
+                            action_singleTexture = tu_action_printChannel;
+                        } break;
+                        case 's': {
+                            silent_output = 1;
+                        } break;
+                        case 'r': {
+                            if (channels_is_modified == 0) {
+                                channels_is_modified = 1;
+                                channels = 0;
+                            }
+                            channels |= tu_channel_red;
+                        } break;
+                        case 'g': {
+                            if (channels_is_modified == 0) {
+                                channels_is_modified = 1;
+                                channels = 0;
+                            }
+                            channels |= tu_channel_green;
+                        } break;
+                        case 'b': {
+                            if (channels_is_modified == 0) {
+                                channels_is_modified = 1;
+                                channels = 0;
+                            }
+                            channels |= tu_channel_blue;
+                        } break;
+                        case 'a': {
+                            if (channels_is_modified == 0) {
+                                channels_is_modified = 1;
+                                channels = 0;
+                            }
+                            channels |= tu_channel_alpha;
+                        } break;
+                    }
+                }
+            }
+        }
+        else {
+            // tu_log("path: %s\n", argument);
+            if (input_pathcount == 0) {
+                texture1 = argument;
+            }
+            else {
+                texture2 = argument;
+            }
+            input_pathcount++;
+        }
+    }
+
+    switch (input_pathcount) {
+        case 0: {
+            tu_log("No path supplied!\n");
+        } break;
+        case 1: {
+            if (!silent_output) tu_log("Texture name \"%s\"\n", texture1);
+            tu_texture texture = (tu_texture) {0};
+            tu_result result = tu_loadTextureFile(texture1, &texture);
+
+            if (result == tu_success) {
+                if (!silent_output) tu_log("\t.Width = %d\n\t.Height = %d\n\t.Channels = %d\n", texture.width, texture.height, texture.channels);
+                switch (action_singleTexture)
+                {
+                    case tu_action_asHex: {
+                        if (!silent_output) tu_log("Data as hex values...\n");
+                        tu_embeddTexture(texture.data, texture.width, texture.height, texture.channels, channels, !silent_output);
+                    } break;
+                    case tu_action_printChannel: {
+                        if (!silent_output) tu_log("Image values values...\n");
+                        tu_printTextureData(texture.data, texture.width, texture.height, texture.channels, channels);
+                    } break;
+                }
+                tu_unloadTexture(texture);
+            } else {
+                tu_log("Something failed\n");
+            }
+        } break;
+        case 2: {
+            // handle merging images for atlases and stuff
+            tu_log("Two images supplied\n");
+        } break;
+        default: {
+            tu_log("Too many paths supplied\n");
+            return -1;
+        }
     }
     return 1;
 }
