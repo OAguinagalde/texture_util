@@ -16,5 +16,6 @@ if ($git_lastCommitMessages) {
     $release_files = @()
     $release_files += Get-Item "./release/release.md"
     $release_files += Get-Item "./release/main.exe"
+    Remove-Iteam "\release\Texture_util.zip" -ErrorAction SilentlyContinue
     Compress-Archive $release_files -DestinationPath ".\release\Texture_util.zip"
 }
