@@ -6,6 +6,7 @@
 
 #define stb_
 #define std_
+#define app_
 
 #define byte_isBitSet(byte, bit) ((1 << bit) & byte)
 #define bit_flag(bitIndex) 1 << bitIndex
@@ -69,7 +70,7 @@ void image_printDebug(unsigned char* image_data, int image_width, int image_heig
         if (pixel_index_y >= desired_height) { break; }
 
         if (pixel_index_x == 0 && pixel_index != 0) {
-            printf("\n");
+            std_ printf("\n");
         }
 
         unsigned char pixel_r, pixel_g, pixel_b, pixel_a;
@@ -78,15 +79,15 @@ void image_printDebug(unsigned char* image_data, int image_width, int image_heig
         if (image_channels >= 3) { pixel_b = image_data[(pixel_index*image_channels) + 2]; }
         if (image_channels >= 4) { pixel_a = image_data[(pixel_index*image_channels) + 3]; }
 
-        if ((image_channels >= 1) && desired_channels & pixel_channel_red   ) { printf("%02x",   pixel_r); }
-        if ((image_channels >= 2) && desired_channels & pixel_channel_green ) { printf("%02x",   pixel_g); }
-        if ((image_channels >= 3) && desired_channels & pixel_channel_blue  ) { printf("%02x",   pixel_b); }
-        if ((image_channels >= 4) && desired_channels & pixel_channel_alpha ) { printf("(%02x)", pixel_a); }
-        printf(" ");
+        if ((image_channels >= 1) && desired_channels & pixel_channel_red   ) { std_ printf("%02x",   pixel_r); }
+        if ((image_channels >= 2) && desired_channels & pixel_channel_green ) { std_ printf("%02x",   pixel_g); }
+        if ((image_channels >= 3) && desired_channels & pixel_channel_blue  ) { std_ printf("%02x",   pixel_b); }
+        if ((image_channels >= 4) && desired_channels & pixel_channel_alpha ) { std_ printf("(%02x)", pixel_a); }
+        std_ printf(" ");
     }
 }
 
-void image_embedToC(unsigned char* image_data, int image_width, int image_height, int image_channels, char desired_channels) {
+void image_embedToC(unsigned char* image_data, int image_width, int image_height, int image_channels, char desired_channels, char* image_name) {
     // Since the output is constructed on a char array, I have to calculate how big it is first...
     int channels_count = 0;
     if ((image_channels >= 1) && desired_channels & pixel_channel_red  ) { channels_count++; }
@@ -99,7 +100,7 @@ void image_embedToC(unsigned char* image_data, int image_width, int image_height
     output_size *= 5; // Each byte will be represented by 5 characters "0x00,"
     output_size++; // For the null terminator
     
-    char* output = calloc(1, output_size);    
+    char* output = std_ calloc(1, output_size);    
     
     char hex_value[3]; // 2 characters representing the a given byte and a null terminator
     int image_pixelCount = image_width*image_height;
@@ -117,43 +118,44 @@ void image_embedToC(unsigned char* image_data, int image_width, int image_height
         if ((image_channels >= 1) && desired_channels & pixel_channel_red) {
             output[(pixel_index*channels_count*5)+0+(5*channels_written)] = '0';
             output[(pixel_index*channels_count*5)+1+(5*channels_written)] = 'x';
-            sprintf(hex_value, "%02x", r);
-            strcpy(&output[(pixel_index*channels_count*5)+2+(5*channels_written)],(const char*)&hex_value);
+            std_ sprintf(hex_value, "%02x", r);
+            std_ strcpy(&output[(pixel_index*channels_count*5)+2+(5*channels_written)],(const char*)&hex_value);
             output[(pixel_index*channels_count*5)+4+(5*channels_written)] = ',';
             channels_written++;
         }
         if ((image_channels >= 2) && desired_channels & pixel_channel_green) {
             output[(pixel_index*channels_count*5)+0+(5*channels_written)] = '0';
             output[(pixel_index*channels_count*5)+1+(5*channels_written)] = 'x';
-            sprintf(hex_value, "%02x", g);
-            strcpy(&output[(pixel_index*channels_count*5)+2+(5*channels_written)],(const char*)&hex_value);
+            std_ sprintf(hex_value, "%02x", g);
+            std_ strcpy(&output[(pixel_index*channels_count*5)+2+(5*channels_written)],(const char*)&hex_value);
             output[(pixel_index*channels_count*5)+4+(5*channels_written)] = ',';
             channels_written++;
         }
         if ((image_channels >= 3) && desired_channels & pixel_channel_blue) {
             output[(pixel_index*channels_count*5)+0+(5*channels_written)] = '0';
             output[(pixel_index*channels_count*5)+1+(5*channels_written)] = 'x';
-            sprintf(hex_value, "%02x", b);
-            strcpy(&output[(pixel_index*channels_count*5)+2+(5*channels_written)],(const char*)&hex_value);
+            std_ sprintf(hex_value, "%02x", b);
+            std_ strcpy(&output[(pixel_index*channels_count*5)+2+(5*channels_written)],(const char*)&hex_value);
             output[(pixel_index*channels_count*5)+4+(5*channels_written)] = ',';
             channels_written++;
         }
         if ((image_channels >= 4) && desired_channels & pixel_channel_alpha) {
             output[(pixel_index*channels_count*5)+0+(5*channels_written)] = '0';
             output[(pixel_index*channels_count*5)+1+(5*channels_written)] = 'x';
-            sprintf(hex_value, "%02x", a);
-            strcpy(&output[(pixel_index*channels_count*5)+2+(5*channels_written)],(const char*)&hex_value);
+            std_ sprintf(hex_value, "%02x", a);
+            std_ strcpy(&output[(pixel_index*channels_count*5)+2+(5*channels_written)],(const char*)&hex_value);
             output[(pixel_index*channels_count*5)+4+(5*channels_written)] = ',';
             channels_written++;
         }
     }
     output[image_pixelCount*channels_count*5] = '\0';
-    printf("const int texture_width = %d;\n", image_width);
-    printf("const int texture_height = %d;\n", image_height);
-    printf("const int texture_channels = %d;\n", channels_count);
-    printf("const int texture_data_size = %d;\n", image_pixelCount*channels_count);
-    printf("const unsigned char texture_data[%d] = {\n    %s\n};\n", image_pixelCount*channels_count, output);
-    free(output);
+    std_ printf("// %s\n", image_name);  
+    std_ printf("const int texture_width = %d;\n", image_width);
+    std_ printf("const int texture_height = %d;\n", image_height);
+    std_ printf("const int texture_channels = %d;\n", channels_count);
+    std_ printf("const int texture_data_size = %d;\n", image_pixelCount*channels_count);
+    std_ printf("const unsigned char texture_data[%d] = {\n    %s\n};\n", image_pixelCount*channels_count, output);
+    std_ free(output);
 }
 
 int main(int argc, char** argv) {
@@ -173,7 +175,7 @@ int main(int argc, char** argv) {
         char* argument = argv[argument_index];
         if (argument[0] == '-') {
             // It's an option
-            int option_len = strlen(argument);
+            int option_len = std_ strlen(argument);
             if (option_len > 1) {
                 for (int option_index = 0; option_index < option_len-1; option_index++) {
                     char option = argument[1+option_index];
@@ -241,19 +243,17 @@ int main(int argc, char** argv) {
     }
 
     if (configuration.image_target1 == NULL) {
-        printf("No image provided!\n");
+        std_ printf("No image provided!\n");
         return -1;
     }
     switch (configuration.action) {
         case do_embed:
         case do_printDebug: {
-            if (configuration.debug_output) printf("Texture name \"%s\"\n", configuration.image_target1);
+            if (configuration.debug_output) std_ printf("Texture name \"%s\"\n", configuration.image_target1);
             image_t image = (image_t) {0};
             image.data = stb_ stbi_load(configuration.image_target1, &image.width, &image.height, &image.channels, 0);
             if (image.data) {
-                if (configuration.debug_output) printf("\t.Width = %d\n\t.Height = %d\n\t.Channels = %d\n", image.width, image.height, image.channels);
-                if (configuration.desired_width == 0) configuration.desired_width = image.width;
-                if (configuration.desired_height == 0) configuration.desired_height = image.height;
+                if (configuration.debug_output) std_ printf("\t.Width = %d\n\t.Height = %d\n\t.Channels = %d\n", image.width, image.height, image.channels);
                 
                 if (configuration.desired_width <= 0) {
                     configuration.desired_width = image.width;
@@ -268,28 +268,28 @@ int main(int argc, char** argv) {
                 else {
                     configuration.desired_height = min(image.height, configuration.desired_height);
                 }
+
                 // if (!silent_output) printf("Data as hex values...\n");
                 // tu_embeddTexture(texture.data, texture.width, texture.height, texture.channels, channels, !silent_output);
-                if (configuration.debug_output) printf("Image values values...\n");
-                if (configuration.action == do_embed) {
-                    printf("// %s\n", configuration.image_target1);                
-                    image_embedToC(image.data, image.width, image.height, image.channels, configuration.target_channels);
+                if (configuration.debug_output) std_ printf("Image values values...\n");
+                if (configuration.action == do_embed) {              
+                    app_ image_embedToC(image.data, image.width, image.height, image.channels, configuration.target_channels, configuration.image_target1);
                 }
                 if (configuration.action == do_printDebug) {
-                    image_printDebug(image.data, image.width, image.height, image.channels, configuration.target_channels, configuration.desired_width, configuration.desired_height);
+                    app_ image_printDebug(image.data, image.width, image.height, image.channels, configuration.target_channels, configuration.desired_width, configuration.desired_height);
                 }
                 stb_ stbi_image_free(image.data);
             } else {
-                printf("Couldn't read the image file!\n");
+                std_ printf("Couldn't read the image file!\n");
             }
         } break;
 
         case do_merge: {
             // handle merging images for atlases and stuff
-            printf("Two images supplied\n");
+            std_ printf("Two images supplied\n");
         } break;
         default: {
-            printf("Something went wrong!\n");
+            std_ printf("Something went wrong!\n");
             return -1;
         }
     }
