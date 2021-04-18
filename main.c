@@ -9,6 +9,8 @@
 
 #define byte_isBitSet(byte, bit) ((1 << bit) & byte)
 #define bit_flag(bitIndex) 1 << bitIndex
+#define max(a,b) (((a) > (b)) ? (a) : (b))
+#define min(a,b) (((a) < (b)) ? (a) : (b))
 #define bool int
 #define true ((int)1)
 #define false ((int)0)
@@ -156,11 +158,12 @@ void image_embedToC(unsigned char* image_data, int image_width, int image_height
 
 int main(int argc, char** argv) {
     configuration_t configuration = (configuration_t) { 0 };
+    // Defaults
     configuration.desired_width = 0;
     configuration.desired_height = 0;
-    configuration.debug_output = true;
+    configuration.debug_output = false;
     configuration.custom_channels = false;
-    configuration.action = do_printDebug;
+    configuration.action = do_embed;
     configuration.image_target1 = NULL;
     configuration.image_target2 = NULL;
     configuration.target_channels = pixel_channel_red | pixel_channel_green | pixel_channel_blue | pixel_channel_alpha;
@@ -180,6 +183,15 @@ int main(int argc, char** argv) {
                         } break;
                         case 'p': {
                             configuration.action = do_printDebug;
+                        } break;
+                        case 'd': {
+                            configuration.debug_output = true;
+                        } break;
+                        case 'l': {
+                            // For debugging purposes, when an image is very big, use option -l
+                            // to display only a 30x30 piece of the image
+                            configuration.desired_width = 30;
+                            configuration.desired_height = 30;
                         } break;
                         case 's': {
                             configuration.debug_output = false;
@@ -242,6 +254,20 @@ int main(int argc, char** argv) {
                 if (configuration.debug_output) printf("\t.Width = %d\n\t.Height = %d\n\t.Channels = %d\n", image.width, image.height, image.channels);
                 if (configuration.desired_width == 0) configuration.desired_width = image.width;
                 if (configuration.desired_height == 0) configuration.desired_height = image.height;
+                
+                if (configuration.desired_width <= 0) {
+                    configuration.desired_width = image.width;
+                }
+                else {
+                    configuration.desired_width = min(image.width, configuration.desired_width);
+                }
+
+                if (configuration.desired_height <= 0) {
+                    configuration.desired_height = image.height;
+                }
+                else {
+                    configuration.desired_height = min(image.height, configuration.desired_height);
+                }
                 // if (!silent_output) printf("Data as hex values...\n");
                 // tu_embeddTexture(texture.data, texture.width, texture.height, texture.channels, channels, !silent_output);
                 if (configuration.debug_output) printf("Image values values...\n");
