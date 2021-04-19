@@ -1,6 +1,5 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
-// #include <string.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
