@@ -18,6 +18,7 @@
 typedef enum application_action {
     do_embed,
     do_printDebug,
+    do_showHelp,
     do_merge
 } application_action;
 
@@ -185,6 +186,9 @@ int main(int argc, char** argv) {
                         case 'p': {
                             configuration.action = do_printDebug;
                         } break;
+                        case 'h': {
+                            configuration.action = do_showHelp;
+                        } break;
                         case 'd': {
                             configuration.debug_output = true;
                         } break;
@@ -239,6 +243,21 @@ int main(int argc, char** argv) {
                 configuration.image_target2 = argument;
             }
         }
+    }
+
+    if (configuration.action == do_showHelp) {
+        //          "....................................................................................." 85 character limit for the help message
+        std_ printf("Usage: main.exe (-[ephdlsrgba]+)? (file1)?\n");
+        std_ printf("   -e       (Default) Outputs ready to use code for Embedding into a C project.\n");
+        std_ printf("   -p       Prints the pixel data directly in the forma \"RRGGBB(AA)\", using the hex\n            values. Useful for debugging. Check option -l.\n");
+        std_ printf("   -h       Display this help message and finish.\n\n");
+        std_ printf("   -[rgba]  (Default) Change the desired channels. Defaults to all 4 (RGBA).\n");
+        std_ printf("   -s       (Default) Silences some of the debug output.\n");
+        std_ printf("   -d       Show all the debug output.\n");
+        std_ printf("   -l       When in combination with option -p, Limits the ammount of pixels\n            displayed to 30x30.\n\n");
+        std_ printf("Example: main.exe ./test.png -plrgb.\n");
+        std_ printf("   This command will display, in a more friendly format (-p) the RGB pixel data\n   (-rgb) of the top left 30x30 pixels (-l) of the image test.png\n");
+        return 0;
     }
 
     if (configuration.image_target1 == NULL) {
